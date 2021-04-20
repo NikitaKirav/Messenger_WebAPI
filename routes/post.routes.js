@@ -112,6 +112,7 @@ router.delete('/:postId', auth,
 
 router.put("/like", auth, async (req, res) => {
     try {
+        res.status(500).json({ message: 'Test' });
         const {postId, like} = req.body;
         const likePost = await LikePost.findOne({postId: postId, userId: req.user.userId});
         // If likePost exist, then update likePost. In another way add a new record.
@@ -140,7 +141,7 @@ router.put("/like", auth, async (req, res) => {
         });
         
     } catch(e) {
-        res.status(500).json({ message: 'Something went wrong' })
+        res.status(500).json({ message: 'Something went wrong' });
     }
 
 });

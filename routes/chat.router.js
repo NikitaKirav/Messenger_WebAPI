@@ -84,12 +84,14 @@ const getUserAvatar = async (clients, { from, userId }) => {
     const data = [];
     for(let i=0; i < userId.length; i++) {
         const profile = await Profile.findOne({userId: userId[i]});
-        const photo = await Photo.findOne({profileId: profile.id});
-        data.push({
-            userId: userId[i],
-            userAvatar: photo.small,
-            userName: profile.fullName
-        })
+        if (profile) {
+            const photo = await Photo.findOne({profileId: profile.id});
+            data.push({
+                userId: userId[i],
+                userAvatar: photo.small,
+                userName: profile.fullName
+            })
+        }
     }
 
     if((data.length > 0) && (from === data[0].userId)) {

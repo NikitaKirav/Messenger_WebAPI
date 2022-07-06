@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server",
+    "start": "set \"NODE_ENV=production\" && node server",
+    "startDev": "set \"NODE_ENV=development\" && node server",
     "server": "nodemon server"
   },
   "author": "",
@@ -21,5 +22,8 @@
     "multer": "^1.4.2",
     "sharp": "^0.27.2",
     "ws": "^7.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
   }
 }

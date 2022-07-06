@@ -6,7 +6,19 @@ const bodyParser = require('body-parser');
 const WebSocket = require('ws');
 const incoming = require('./routes/chat');
 
-const PORT = process.env.MESSANGER_PORT || 4000;
+const {
+  MONGO_USERNAME,
+  MONGO_PASSWORD,
+  MONGO_HOSTNAME,
+  MONGO_PORT,
+  MONGO_DB
+} = process.env;
+
+const urlDb = process.env.NODE_ENV === 'production' 
+              ? `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:${MONGO_PORT}/${MONGO_DB}`
+              : "mongodb://localhost:27017/messanger"; //`mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:${MONGO_PORT}/${MONGO_DB}`; //"mongodb://localhost:27017/messanger";
+console.log("urlDb: ", urlDb);
+const PORT = process.env.MESSANGER_PORT || 4040;
 const corsOpts = {
     origin: '*',
   
@@ -30,24 +42,24 @@ app.use(express.json({ extended: true }));
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
-app.use('/api/auth', require('./routes/auth.routes'));
-app.use('/api/profile', require('./routes/profile.routes'));
-app.use('/api/users', require('./routes/users.routes'));
-app.use('/api/post', require('./routes/post.routes'));
+app.use('/api-messanger/auth', require('./routes/auth.routes'));
+app.use('/api-messanger/profile', require('./routes/profile.routes'));
+app.use('/api-messanger/users', require('./routes/users.routes'));
+app.use('/api-messanger/post', require('./routes/post.routes'));
 
 const start = async() => {
     try {
-        await mongoose.connect(process.env.MESSANGER_MONGO_URI,
+        await mongoose.connect(urlDb,
             { useFindAndModify: false, 
               useNewUrlParser: true, 
               useCreateIndex: true, 
               useUnifiedTopology: true });
-        app.listen(PORT, 'localhost', () => {
+        app.listen(PORT, () => {
             console.log(`server is listening on port: ${PORT}`);
         });
 
         // WebSocket-server on the port 8081
-        const wss = new WebSocket.Server({ port: 8081, host: 'localhost' });
+        const wss = new WebSocket.Server({ port: 8081 });
         wss.on('connection', function connection(ws) {
           ws.on('message', (data) => incoming(ws, data));
         });

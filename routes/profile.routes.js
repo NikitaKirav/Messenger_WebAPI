@@ -213,8 +213,10 @@ router.put("/photo", auth, upload.single("file"), async (req, res, next) => {
 
             const updatePhoto = {
                 $set: {
-                    large: `${config.get("baseUrl")}/uploads/${formData.filename}`,
-                    small: `${config.get("baseUrl")}/uploads/mini-${formData.filename}`
+                    //large: `${config.get("baseUrl")}/uploads/${formData.filename}`,
+                    //small: `${config.get("baseUrl")}/uploads/mini-${formData.filename}`
+                    large: `/uploads/${formData.filename}`,
+                    small: `/uploads/mini-${formData.filename}`
                 },
                 };
 
@@ -222,6 +224,7 @@ router.put("/photo", auth, upload.single("file"), async (req, res, next) => {
 
         }
         const photos = await Photo.findOne({ profileId: profile.id });
+        await sleep(500); 
         res.json({
             resultCode: ResultCode.Success,
             data: {                
@@ -245,6 +248,12 @@ const deleteFile = (imagePath) => {
             }
         });
     }
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
 }
 
 module.exports = router;

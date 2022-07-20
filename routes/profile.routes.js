@@ -2,8 +2,6 @@ const { Router } = require('express');
 const Profile = require('../models/Profile');
 var path = require('path');
 const { ResultCode } = require('./routes');
-const Contact = require('../models/Contact');
-const Status = require('../models/Status');
 const Photo = require('../models/Photo');
 const auth = require('../middleware/auth.middleware');
 const router = Router();
@@ -11,6 +9,10 @@ const config = require('config');
 const multer  = require("multer");
 const sharp = require('sharp');
 const {unlink, access} = require('fs');
+const profileRepository = require('../repository/profile.repository');
+const contactRepository = require('../repository/contact.repository');
+const statusRepository = require('../repository/status.repository');
+const photoRepository = require('../repository/photo.repository');
 
 const storageConfig = multer.diskStorage({
   destination: (req, file, cb) =>{
@@ -53,37 +55,31 @@ const upload = multer({storage:storageConfig, fileFilter: fileFilter});
 
 router.put('/', auth, async (req, res) => {
     try {
-        const userProfile = await Profile.find({ userId: req.user.userId });
+        const userProfile = await profileRepository.getProfileByUserId(req.user.userId); //await Profile.find({ userId: req.user.userId });
 
         if(userProfile) {
-            const profileParams = req.body;
+            const params = req.body;
 
-          const updateProfile = {
-            $set: {
-                userId: req.user.userId,
-                aboutMe: profileParams.aboutMe,
-                lookingForAJob: profileParams.lookingForAJob,
-                lookingForAJobDescription: profileParams.lookingForAJobDescription,
-                fullName: profileParams.fullName,
-            },
+            const profileParams = {
+                aboutMe: params.aboutMe,
+                lookingForAJob: params.lookingForAJob,
+                lookingForAJobDescription: params.lookingForAJobDescription,
+                fullName: params.fullName
             };
 
-            const resultProfile = await Profile.findOneAndUpdate({userId: req.user.userId}, updateProfile);
+            const resultProfile = await profileRepository.updateProfile(req.user.userId, profileParams); 
 
-            const updateContacts = {
-                $set: {
-                    github: profileParams.contacts.github,
-                    vk: profileParams.contacts.vk,
-                    facebook: profileParams.contacts.facebook,
-                    instagram: profileParams.contacts.instagram,
-                    twitter: profileParams.contacts.twitter,
-                    website: profileParams.contacts.website,
-                    youtube: profileParams.contacts.youtube,
-                    mainlink: profileParams.contacts.mainlink
-                },
-                };
-    
-            const resultContacts = await Contact.findOneAndUpdate({profileId: resultProfile.id}, updateContacts);
+            const contactParams = {
+                github: params.contacts.github,
+                vk: params.contacts.vk,
+                facebook: params.contacts.facebook,
+                instagram: params.contacts.instagram,
+                twitter: params.contacts.twitter,
+                website: params.contacts.website,
+                youtube: params.contacts.youtube,
+                mainlink: params.contacts.mainlink
+            };
+            const resultContact = await contactRepository.updateContact(resultProfile.id, contactParams);
 
             res.json({
                 resultCode: ResultCode.Success,
@@ -101,7 +97,7 @@ router.put('/', auth, async (req, res) => {
 
 router.get('/status/:userId', async (req, res) => {
     try {
-        const result = await Status.findOne({ userId: req.params.userId });
+        const result = await statusRepository.getStatusByUserId(req.params.userId); 
         res.json({
             resultCode: ResultCode.Success,
             data: {
@@ -116,36 +112,20 @@ router.get('/status/:userId', async (req, res) => {
 
 router.put('/status', auth, async (req, res) => {
     try {
-        const status = await Status.findOne({ userId: req.user.userId });
+        const status = await statusRepository.getStatusByUserId(req.user.userId); 
         const statusParams = req.body;
 
         if(status) {            
-            const updateStatus = {
-                $set: {
-                    status: statusParams.status
-                },
-                };
-
-            const resultContacts = await Status.findOneAndUpdate({userId: req.user.userId}, updateStatus);
-
-            res.json({
-                resultCode: ResultCode.Success,
-                data: {
-                    status: statusParams.status
-                }
-            });
+            const resultContacts = await statusRepository.updateStatus(req.user.userId, statusParams.status);
         } else {
-
-            const status = new Status({userId: req.user.userId, status: statusParams.status});
-            const newStatus = await status.save();
-
-            res.json({
-                resultCode: ResultCode.Success,
-                data: {
-                    status: statusParams.status
-                }
-            });
+            const resultStatus = await statusRepository.addStatus(req.user.userId, statusParams.status);
         }
+        res.json({
+            resultCode: ResultCode.Success,
+            data: {
+                status: statusParams.status
+            }
+        });
 
     } catch(e) {
         res.status(500).json({ message: 'Something went wrong' })
@@ -154,9 +134,9 @@ router.put('/status', auth, async (req, res) => {
 
 router.get('/:userId', async (req, res) => {
     try {
-        const profile = await Profile.findOne({ userId: req.params.userId });
-        const contacts = await Contact.findOne({ profileId: profile.id });
-        const photos = await Photo.findOne({ profileId: profile.id });
+        const profile = await profileRepository.getProfileByUserId(req.params.userId); 
+        const contacts = await contactRepository.getContactByProfileId(profile.id); 
+        const photos = await photoRepository.getPhotoByProfileId(profile.id); 
         res.json({
             resultCode: ResultCode.Success,
             data: {

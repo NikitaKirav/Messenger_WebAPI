@@ -2,14 +2,14 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
-const User = require('../models/User');
 const { ResultCode } = require('./routes');
-const Profile = require('../models/Profile');
-const Contact = require('../models/Contact');
-const Photo = require('../models/Photo');
+const userRepository = require('../repository/user.repository');
+const profileRepository = require('../repository/profile.repository');
+const contactRepository = require('../repository/contact.repository');
+const photoRepository = require('../repository/photo.repository');
 const router = express.Router();
 
-// /api/auth/login
+// /api/auth/me
 router.get(
     '/me', 
     async (req, res) => {
@@ -43,7 +43,7 @@ router.post(
 
         const {email, password, userName} = req.body;
 
-        const candidate = await User.findOne({ email });
+        const candidate = await userRepository.getUserByEmail(email);
 
         if(candidate) {
             return res.status(400).json({ message: 'This user already exists!', resultCode: 1})
@@ -51,19 +51,15 @@ router.post(
 
         const hashedPassword = await bcrypt.hash(password, 12);
         // Add a new user in database
-        const user = new User({email, password: hashedPassword});
-        const newUser = await user.save();
+        const newUser = await userRepository.addUser(email, hashedPassword); 
 
         // When we create a new user we require his profile(we can't have a user without a profile)
         // Add his profile in database
-        const profile = new Profile({userId: newUser.id, fullName: userName});
-        const newProfile = await profile.save();
+        const newProfile = await profileRepository.addProfile(newUser.id, userName); 
         // Add his contact in database
-        const contact = new Contact({profileId: newProfile.id});
-        await contact.save();
+        await contactRepository.addContact(newProfile.id); 
         // Add his photo in database
-        const photo = new Photo({profileId: newProfile.id});
-        await photo.save();
+        await photoRepository.addPhoto(newProfile.id); 
 
 
         res.status(201).json({message: 'Thanks for registration. User was added!', resultCode: 0});
@@ -94,8 +90,8 @@ router.post(
 
         const {email, password} = req.body;
 
-        const user = await User.findOne({ email });
-        const profile = await Profile.findOne({userId: user.id});
+        const user = await userRepository.getUserByEmail(email); 
+        const profile = await profileRepository.getProfileByUserId(user.id);
 
         if(!user) {
             return res.status(200).json({ message: 'Invalid password or email, try again!', resultCode: 1 });

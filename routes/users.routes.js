@@ -1,41 +1,42 @@
 const { Router } = require('express');
-const Profile = require('../models/Profile');
 const { ResultCode } = require('./routes');
-const Photo = require('../models/Photo');
-const Follower = require('../models/Follower');
 const auth = require('../middleware/auth.middleware');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 const router = Router();
+const userRepository = require('../repository/user.repository');
+const profileRepository = require('../repository/profile.repository');
+const photoRepository = require('../repository/photo.repository');
+const followerRepository = require('../repository/follower.repository');
+
 
 router.get('/', async (req, res) => {
     try {
 
         let userId = '';
-        const token = req.headers.authorization.split(' ')[1]; // "Bearer TOKEN"
+        const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // "Bearer TOKEN"
 
-        if(token) {
+        if(token && token !== '{}') {
             const secret = process.env.MESSANGER_JWT_SECRET;
             const decoded = jwt.verify(token, secret, {ignoreExpiration: true} );
             const user = decoded;
             userId = user.userId;
         }
 
-        const profiles = await Profile.find();
+        const profiles = await profileRepository.getProfiles(); 
 
         let profileList = {
             totalCount: userId === '' ? profiles.length : profiles.length-1,
             items: []
         };
         for(let i=0; i < profiles.length; i++) {
-            const profileUserId = await User.findById(profiles[i].userId);
+            const profileUserId = await userRepository.getUserById(profiles[i].userId); 
             if (profileUserId.id !== userId) {
-                const photos = await Photo.findOne({ profileId: profiles[i].id });
-                const follower = userId === '' ? null : await Follower.findOne({followerId: profiles[i].userId, userId});
+                const photos = await photoRepository.getPhotoByProfileId(profiles[i].id);
+                const follower = userId === '' ? null : await followerRepository.getFollowerByIdAndUserId(profiles[i].userId, userId);
                 profileList.items.push({
                     id: profiles[i].userId,
                     name: profiles[i].fullName,
-                    photos: {small: photos.small, large: photos.large},
+                    photos: {small: photos.small ?? '', large: photos.large ?? ''},
                     followed: follower ? true : false
                 });
             }
@@ -47,25 +48,30 @@ router.get('/', async (req, res) => {
         });
 
     } catch(e) {
+        console.log(e.message);
         res.status(500).json({ message: 'Something went wrong' })
     }
 });
 
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', async (req, res, next) => {
     try {
 
         let ownerId = '';
         let follower = null;
-        const token = req.headers.authorization.split(' ')[1]; // "Bearer TOKEN"
+        const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // "Bearer TOKEN"
 
-        if(token) {
+        if(token && token !== '{}') {
             const secret = process.env.MESSANGER_JWT_SECRET;
             const decoded = jwt.verify(token, secret, {ignoreExpiration: true} );
             const user = decoded;
             ownerId = user.userId;
         }
         if (ownerId !== '') {
-            follower = await Follower.findOne({followerId: req.params.userId, userId: ownerId});
+            follower = await followerRepository.getFollowerByIdAndUserId(req.params.userId, ownerId);
+
+            /*if(!follower) {
+                return next(createError(404, "Not found"));
+            }*/
         }
 
         res.json({
@@ -82,12 +88,7 @@ router.get('/:userId', async (req, res) => {
 
 router.post('/follow/:followerId', auth, async (req, res) => {
     try {
-        const newFollower = new Follower({
-            userId: req.user.userId,
-            followerId: req.params.followerId
-        });
-
-        await newFollower.save();
+        await followerRepository.saveFollower(req.params.followerId, req.user.userId);
 
         res.json({
             resultCode: ResultCode.Success
@@ -100,7 +101,7 @@ router.post('/follow/:followerId', auth, async (req, res) => {
 
 router.delete('/follow/:followerId', auth, async (req, res) => {
     try {
-        const result = await Follower.deleteOne({userId: req.user.userId, followerId: req.params.followerId})
+        await followerRepository.deleteFollower(req.params.followerId, req.user.userId);
 
         res.json({
             resultCode: ResultCode.Success

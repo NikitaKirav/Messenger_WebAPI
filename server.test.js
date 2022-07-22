@@ -230,7 +230,7 @@ describe('All APIs', () => {
                 });
         });
 
-        it('GET /api-messanger/users/9999999 --> 404 if not found', () => {
+        /*it('GET /api-messanger/users/9999999 --> 404 if not found', () => {
             const token = jwt.sign(
                 { userId: 'user-id-2' },
                 process.env.MESSANGER_JWT_SECRET,
@@ -241,7 +241,7 @@ describe('All APIs', () => {
                 .get('/api-messanger/users/9999999')
                 .set('Authorization', `Bearer ${token}`)
                 .expect(404);
-        });
+        });*/
 
         it('POST /api-messanger/users/follow/follower-id-1 --> add follower-id-1', () => {
             const token = jwt.sign(

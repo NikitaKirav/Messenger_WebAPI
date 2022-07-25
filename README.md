@@ -5,21 +5,22 @@
 This project is an example of [Messenger](https://kirav.ru/works/messenger/). It had educational purposes and now you can see a result in my code here. 
 This is a big learning project with a lot of complex stuff. I take ideas from modern messengers and social networks and try to repeat the result as fully as possible.
 
-In this moment it has the following opportunities:
+At this moment it has the following opportunities:
 1) Registration and login pages. You can register in system and see how it works.
 2) Profile page with a posts list. You can upload your avatar and edit its frames. Edit status and user's information. You can add your post to any user's profile. Add likes or dislikes.
 3) User's list page. You can follow and unfollow any user.
-4) User's chat list. Here, you can find all your chats and follow to one.
+4) User's chat list. Here, you can find all your chats and follow the ones.
 
-Project use the following technologies:
+Project uses the following technologies:
 - [ ] Frontend: React + Redux, Sagas, TypeScript
-- [x] Backend: NodeJS
+- [x] Backend: NodeJS + Express + Mongoose
 - [ ] Database: MongoDb
+
 Frontend and Backend part have unit and integration tests.
 
 - [x] - current repository
 
-Also you can find Dockerfile.prod in the project. Use it in your case, it saves you a lot of time.
+Also you can find Dockerfile.prod in the project. You may use it if you like, it saves a lot of time.
 This project was prepared with another big project [KiravRu_WebApi](https://github.com/NikitaKirav/KiravRu_WebApi). There you can find a file docker-compose.yml, nginx.conf and also some useful bash scripts (for Deployment Automation and getting free ssl for your site).
 
 ## Available Scripts
